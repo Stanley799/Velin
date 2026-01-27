@@ -1,0 +1,3 @@
+// Please move your scene.gltf file from src/assets/ to the public/ directory for Vite to serve it correctly.
+// After moving, access it at '/scene.gltf' in your GLTFLoader.
+// This is required for static assets in Vite/React projects.

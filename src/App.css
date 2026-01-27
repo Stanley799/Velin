@@ -1,0 +1,526 @@
+/* Bottom nav button styles (mobile) */
+.velin-topnav-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  outline: none;
+  color: #bdbdbd;
+  font-size: 24px;
+  height: 100%;
+  transition: background 0.18s, color 0.18s;
+  border-radius: 14px;
+  margin: 0 2px;
+  cursor: pointer;
+}
+.
+.velin-bottomnav .velin-topnav-btn.active,
+.velin-topnav-btn.active {
+  background: linear-gradient(135deg, #1DB954 60%, #232323 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 2px 16px #1DB954cc, 0 0 0 2px #1DB95455 !important;
+  border: 2px solid #1DB954 !important;
+  outline: none !important;
+  z-index: 2;
+}
+.velin-topnav-btn:hover {
+  background: #232323;
+  color: #1DB954;
+}
+/* Responsive main content container */
+.velin-main-content {
+  width: 100%;
+  max-width: 100vw;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 2vw 24px 2vw;
+  box-sizing: border-box;
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+/* Center and scale all cards and list items */
+.velin-card, .velin-list-item {
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  max-width: 540px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: rgba(24, 34, 64, 0.92);
+  border-radius: 24px;
+  box-shadow: 0 4px 32px #3f8efc20, 0 1.5px 8px #0008;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  padding: 28px 24px;
+  margin: 22px 0;
+  border: 1.5px solid #3f8efc;
+  color: #f4f4f4;
+  transition: box-shadow 0.2s, background 0.2s, border 0.2s;
+}
+@media (max-width: 900px) {
+  .velin-main-content {
+    max-width: 98vw;
+    padding: 0 1vw 24px 1vw;
+  }
+  .velin-card, .velin-list-item {
+    max-width: 98vw;
+    padding: 18px 8px;
+    border-radius: 16px;
+    margin: 14px 0;
+    font-size: 15px;
+  }
+}
+@media (max-width: 600px) {
+  .velin-main-content {
+    max-width: 100%;
+    width: 100%;
+    padding: 0 0 24px 0;
+    min-height: 60vh;
+    align-items: center;
+  }
+  .velin-card, .velin-list-item {
+    max-width: 100%;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    border-radius: 10px;
+    padding: 12px 2vw;
+    margin: 8px 0;
+    font-size: 14px;
+  }
+  .velin-bottomnav {
+    display: flex !important;
+  }
+  .velin-bottomnav-spacer {
+    display: block;
+    height: 56px;
+    width: 100vw;
+  }
+}
+
+/* Metrics card */
+.velin-card-metrics {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.velin-xp-ring {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  margin-bottom: 4px;
+}
+.velin-xp-ring-labels {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 92px;
+  height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+.velin-level-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.velin-health-score {
+  font-weight: 600;
+  font-size: 16px;
+  background: linear-gradient(90deg,#e0ffe6,#f3e1ff);
+  border-radius: 10px;
+  padding: 2px 14px;
+  margin-top: 2px;
+}
+.velin-health-score.good { color: #43b581; }
+.velin-health-score.warn { color: #FFD600; }
+.velin-health-score.bad { color: #e57373; }
+
+/* 3D card */
+.velin-card-3d {
+  padding: 0;
+  margin-bottom: 18px;
+  overflow: hidden;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.velin-3d-label {
+  text-align: center;
+  font-weight: 600;
+  font-size: 15px;
+  color: #7f53ac;
+  margin-bottom: 8px;
+}
+
+/* Insight card */
+.velin-card-insight {
+  border-left: 6px solid #FFD600;
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.velin-insight-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.velin-insight-text {
+  font-size: 16px;
+  color: #3f2778;
+  font-weight: 500;
+}
+
+/* Review card */
+.velin-card-review {
+  border-left: 6px solid #7f53ac;
+  margin-bottom: 18px;
+}
+.velin-review-title {
+  font-weight: 700;
+  color: #7f53ac;
+  margin-bottom: 4px;
+}
+.velin-review-summary {
+  margin-bottom: 4px;
+}
+.velin-review-recommendation {
+  font-style: italic;
+  color: #333;
+}
+/* Spacer to prevent content from being hidden behind bottom nav on mobile */
+.velin-bottomnav-spacer {
+  display: none;
+}
+@media (max-width: 600px) {
+  .velin-bottomnav {
+    display: flex !important;
+  }
+  .velin-bottomnav-spacer {
+    display: block;
+    height: 56px;
+    width: 100vw;
+  }
+}
+.velin-sidebar {
+  /* default sidebar styles here, hidden on mobile below */
+}
+@media (max-width: 900px) {
+  .velin-sidebar {
+    display: none !important;
+  }
+}
+@media (min-width: 901px) {
+  .velin-bottomnav {
+    display: none !important;
+  }
+}
+
+.velin-bottomnav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 56px;
+  background: rgba(20, 20, 40, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 1001;
+  box-shadow: 0 -2px 8px 0 rgba(0,0,0,0.12);
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  transition: background 0.3s;
+  color: #fff;
+}
+
+.velin-card, .velin-list-item {
+  max-width: 100%;
+  width: 100%;
+  margin: 0 auto;
+  border-radius: 0;
+  transition: box-shadow 0.2s, background 0.2s, border 0.2s;
+}
+
+@media (max-width: 900px) {
+  .velin-card {
+    padding: 16px 8px;
+    border-radius: 16px;
+    margin: 12px 0;
+    font-size: 15px;
+  }
+  .velin-list-item {
+    padding: 8px 8px;
+    border-radius: 10px;
+    margin: 4px 0;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 600px) {
+  .velin-card {
+    padding: 10px 2vw;
+    border-radius: 10px;
+    margin: 8px 0;
+    font-size: 14px;
+  }
+  .velin-list-item {
+    padding: 6px 2vw;
+    border-radius: 8px;
+    margin: 2px 0;
+    font-size: 14px;
+  }
+  .velin-sidebar {
+    display: none !important;
+  }
+}
+/* Premium blue gradient button for all non-sidebar buttons */
+.velin-btn, .velin-btn-blue {
+  background: linear-gradient(90deg, #3f8efc 0%, #7f53ac 100%) !important;
+  color: #fff !important;
+  border: none;
+  font-weight: 700;
+  border-radius: 18px;
+  box-shadow: 0 2px 12px #3f8efc60;
+  padding: 13px 0;
+  font-size: 18px;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  font-family: 'Inter', 'Roboto', 'Arial', sans-serif;
+  letter-spacing: 0.1px;
+  outline: none;
+}
+.velin-btn:disabled, .velin-btn-blue:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.velin-btn:hover, .velin-btn-blue:hover {
+  background: linear-gradient(90deg, #7f53ac 0%, #3f8efc 100%) !important;
+  box-shadow: 0 6px 24px #3f8efc80;
+  transform: translateY(-2px) scale(1.03);
+}
+
+/* --- GLOBAL DARK THEME + NEON ACCENT --- */
+
+
+
+
+body {
+  margin: 0;
+  font-family: 'Roboto', 'Arial', sans-serif;
+  background: #1a0a0a url('data:image/svg+xml;utf8,<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="180" height="180" fill="%231a0a0a"/><g opacity="0.13"><path d="M10 20c4-8 16-8 20 0s16 8 20 0 16-8 20 0" stroke="%23ffb6c1" stroke-width="1.2" fill="none"/><circle cx="30" cy="100" r="7" stroke="%23ffb6c1" stroke-width="1.2" fill="none"/><path d="M50 50c0-8 16-8 16 0s16 8 16 0" stroke="%23ffb6c1" stroke-width="1.2" fill="none"/><path d="M90 30c4 4 12 4 16 0" stroke="%23ffb6c1" stroke-width="1.2" fill="none"/><path d="M10 140c4 4 12 4 16 0" stroke="%23ffb6c1" stroke-width="1.2" fill="none"/><path d="M100 110c0-4 8-4 8 0s8 4 8 0" stroke="%23ffb6c1" stroke-width="1.2" fill="none"/><path d="M70 70c0-4 8-4 8 0s8 4 8 0" stroke="%23ffb6c1" stroke-width="1.2" fill="none"/><path d="M40 160c4-4 12-4 16 0" stroke="%23ffb6c1" stroke-width="1.2" fill="none"/><path d="M125 15c0-4 8-4 8 0s8 4 8 0" stroke="%23ffb6c1" stroke-width="1.2" fill="none"/><text x="12" y="40" font-size="10" fill="%23ffb6c1" font-family="Arial">❤</text><text x="100" y="170" font-size="10" fill="%23ffb6c1" font-family="Arial">💑</text><text x="70" y="20" font-size="10" fill="%23ffb6c1" font-family="Arial">💕</text><text x="150" y="90" font-size="10" fill="%23ffb6c1" font-family="Arial">💌</text><text x="40" y="130" font-size="10" fill="%23ffb6c1" font-family="Arial">💍</text><text x="80" y="80" font-size="10" fill="%23ffb6c1" font-family="Arial">😊</text><text x="120" y="60" font-size="10" fill="%23ffb6c1" font-family="Arial">😍</text><text x="160" y="40" font-size="10" fill="%23ffb6c1" font-family="Arial">😘</text><text x="20" y="170" font-size="10" fill="%23ffb6c1" font-family="Arial">🎨</text><text x="140" y="140" font-size="10" fill="%23ffb6c1" font-family="Arial">🌸</text><text x="100" y="100" font-size="10" fill="%23ffb6c1" font-family="Arial">👫</text><text x="60" y="150" font-size="10" fill="%23ffb6c1" font-family="Arial">💃</text><text x="170" y="170" font-size="10" fill="%23ffb6c1" font-family="Arial">🎶</text></g></svg>') repeat;
+  color: #f4f4f4;
+}
+
+#root {
+  min-height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background: transparent;
+}
+
+/* Sidebar styles */
+.velin-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 80px;
+  height: 100vh;
+  background: #7b263a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0 12px 0;
+  z-index: 100;
+  box-shadow: 2px 0 24px #000a;
+}
+.velin-sidebar .velin-sidebar-icon {
+  width: 48px;
+  height: 48px;
+  margin: 12px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  color: #bdbdbd;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+}
+.velin-sidebar .velin-sidebar-icon.active {
+  background: linear-gradient(135deg, #1DB954 60%, #232323 100%);
+  color: #fff !important;
+  box-shadow: 0 2px 16px #1DB954cc, 0 0 0 2px #1DB95455;
+  border: 2px solid #1DB954;
+  outline: none;
+  z-index: 2;
+}
+.velin-sidebar .velin-sidebar-icon:hover {
+  background: #232323;
+  color: #1DB954 !important;
+  border: 2px solid #1DB954;
+  box-shadow: 0 2px 12px #1DB95480;
+}
+
+@media (max-width: 900px) {
+  .velin-sidebar {
+    width: 64px;
+    padding: 12px 0 8px 0;
+  }
+  .velin-sidebar .velin-sidebar-icon {
+    width: 38px;
+    height: 38px;
+    margin: 8px 0;
+    border-radius: 12px;
+  }
+}
+
+.MuiBottomNavigation-root {
+  border-top-left-radius: 20px !important;
+  border-top-right-radius: 20px !important;
+  box-shadow: 0 -2px 16px #b71c1c20;
+  background: #232526 !important;
+}
+
+.MuiBottomNavigationAction-root {
+  min-width: 0;
+  flex: 1;
+  font-size: 1rem;
+  padding: 8px 0 4px 0;
+  color: #f4f4f4 !important;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: color 0.2s;
+}
+.Mui-selected {
+  color: #e53935 !important;
+  text-shadow: 0 2px 8px #b71c1c80;
+}
+
+@media (max-width: 600px) {
+  #root {
+    padding: 0;
+  }
+  .MuiBox-root {
+    padding: 0 !important;
+  }
+}
+
+/* Animations */
+/* WhatsApp-like fade-in */
+.velin-fade-in {
+  animation: velin-fade-in 0.5s cubic-bezier(.7,0,.3,1);
+}
+@keyframes velin-fade-in {
+  0% { opacity: 0; transform: translateY(24px) scale(0.98); }
+  80% { opacity: 1; transform: translateY(-2px) scale(1.01); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+/* WhatsApp-like card pop-in */
+.velin-card {
+  animation: velin-card-pop 0.7s cubic-bezier(.7,0,.3,1);
+}
+@keyframes velin-card-pop {
+  0% { opacity: 0; transform: scale(0.95) translateY(32px); }
+  60% { opacity: 1; transform: scale(1.03) translateY(-4px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+
+/* Velin input and textarea styles for premium dark look */
+.velin-input, .velin-textarea, input[type="text"], textarea {
+  color: #f4f4f4 !important;
+  background: #23243a !important;
+  border: 1.5px solid #3f8efc;
+  border-radius: 14px;
+  font-size: 17px;
+  padding: 13px 14px;
+  box-shadow: 0 1px 6px #3f8efc20;
+  outline: none;
+  margin-bottom: 8px;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+.velin-input:focus, .velin-textarea:focus, input[type="text"]:focus, textarea:focus {
+  border: 1.5px solid #FFD600;
+  box-shadow: 0 2px 12px #FFD60040;
+}
+
+
+/* Card glassmorphism dark - now handled above for .velin-card, .velin-list-item */
+
+/* List item style dark - now handled above for .velin-card, .velin-list-item */
+.velin-list-item:hover {
+  background: rgba(40, 60, 120, 0.97);
+}
+/* Typography improvements */
+h1, .velin-title-main {
+  font-family: 'Inter', 'Roboto', 'Arial', sans-serif;
+  font-weight: 900;
+  font-size: 2.1rem;
+  color: #3f2778;
+  letter-spacing: 0.5px;
+  margin: 0 0 10px 0;
+  text-align: center;
+}
+h2, .velin-section-title {
+  font-family: 'Inter', 'Roboto', 'Arial', sans-serif;
+  font-weight: 800;
+  font-size: 1.3rem;
+  color: #7f53ac;
+  margin: 0 0 8px 0;
+}
+.velin-section-subtitle {
+  font-size: 1.1rem;
+  color: #657ced;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.velin-label {
+  font-size: 1rem;
+  color: #FFD600;
+  font-weight: 700;
+}
+/* Section separation */
+.velin-section {
+  margin-bottom: 32px;
+  width: 100%;
+}
+.velin-divider {
+  width: 100%;
+  height: 1.5px;
+  background: linear-gradient(90deg, #7f53ac 0%, #FFD600 100%);
+  border: none;
+  margin: 24px 0;
+  opacity: 0.18;
+  border-radius: 2px;
+}
+/* Responsive grid for dashboard cards */
+.velin-dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  width: 100%;
+}
+@media (max-width: 900px) {
+  .velin-dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
