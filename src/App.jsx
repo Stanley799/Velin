@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { auth } from './firebase';
 import { onAuthStateChanged, signInAnonymously } from 'firebase/auth';
 import { db } from './firebase';
-import { collection, addDoc, query, orderBy, onSnapshot, doc, getDoc, setDoc, updateDoc, onSnapshot as onDocSnapshot } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, onSnapshot, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot as onDocSnapshot } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { ThemeProvider, createTheme, CssBaseline, Box, Fade, Snackbar, Alert, useMediaQuery } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/SpaceDashboard';
@@ -43,13 +43,13 @@ function Dashboard({ showToast }) {
   const [insightLoading, setInsightLoading] = useState(false);
   const timeoutRef = useRef();
   const appId = "velin-demo";
-  const xpDocRef = doc(db, getPublicDataPath(appId) + "xp", "shared");
+  const xpDocRef = doc(db, getPublicDataPath(appId) + "/xp", "shared");
   const level = calculateLevel(xp);
   const userId = auth.currentUser?.uid || "-";
 
   // Real-time Firestore sync for goals
   useEffect(() => {
-    const q = query(collection(db, getPublicDataPath(appId) + "goals"), orderBy("created", "desc"));
+    const q = query(collection(db, getPublicDataPath(appId) + "/goals"), orderBy("created", "desc"));
     const unsub = onSnapshot(q, snap => {
       setGoals(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
@@ -58,8 +58,8 @@ function Dashboard({ showToast }) {
 
   // Real-time Firestore sync for journal and feedbacks (for AI)
   useEffect(() => {
-    const jq = query(collection(db, getPublicDataPath(appId) + "journal"), orderBy("created", "desc"));
-    const fq = query(collection(db, getPublicDataPath(appId) + "feedback"), orderBy("created", "desc"));
+    const jq = query(collection(db, getPublicDataPath(appId) + "/journal"), orderBy("created", "desc"));
+    const fq = query(collection(db, getPublicDataPath(appId) + "/feedback"), orderBy("created", "desc"));
     const unsubJ = onSnapshot(jq, snap => {
       setJournal(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
@@ -120,7 +120,7 @@ function Dashboard({ showToast }) {
     e.preventDefault();
     if (!goalInput.trim()) return;
     try {
-      await addDoc(collection(db, getPublicDataPath(appId) + "goals"), {
+      await addDoc(collection(db, getPublicDataPath(appId) + "/goals"), {
         text: goalInput,
         created: Date.now(),
       });
@@ -218,7 +218,7 @@ function Dashboard({ showToast }) {
 
       {/* Personalized Prompt */}
       {prompt && (
-        <div className="velin-card" style={{ borderLeft: '6px solid #43b581', marginBottom: 18, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div className="velin-card" style={{ border: 'none', borderLeft: '6px solid #43b581', marginBottom: 18, display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={{ fontWeight: 700, color: '#43b581', marginBottom: 2 }}>Conversation Starter</div>
           <input type="text" value={prompt} readOnly style={{ fontWeight: 500, fontSize: 15, color: '#2d1a4d', background: '#f8fafc', border: 'none', outline: 'none', width: '100%', borderRadius: 10, padding: '8px 10px', marginTop: 2 }} onFocus={e => e.target.select()} />
         </div>
@@ -308,25 +308,36 @@ function XPBurst() {
 }
 function Roadmap() {
   const [goals, setGoals] = useState([]);
+  const [archived, setArchived] = useState([]);
   const [goalText, setGoalText] = useState("");
   const [domain, setDomain] = useState("");
   const [timeframe, setTimeframe] = useState("");
+  const [goalType, setGoalType] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [burstGoalId, setBurstGoalId] = useState(null);
   const appId = "velin-demo";
-  const xpDocRef = doc(db, getPublicDataPath(appId) + "xp", "shared");
-  const sharedGoalsPath = getPublicDataPath(appId) + "shared_goals";
+  const xpDocRef = doc(db, getPublicDataPath(appId) + "/xp", "shared");
+  const sharedGoalsPath = getPublicDataPath(appId) + "/shared_goals";
+  const archivePath = getPublicDataPath(appId) + "/goals_archive";
 
-  // Real-time Firestore sync for shared goals
+  // Real-time Firestore sync for shared goals and archive
   useEffect(() => {
     const q = query(collection(db, sharedGoalsPath));
     const unsub = onSnapshot(q, snap => {
       setGoals(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
-    return unsub;
+    const q2 = query(collection(db, archivePath));
+    const unsub2 = onSnapshot(q2, snap => {
+      setArchived(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => { unsub(); unsub2(); };
   }, []);
 
-  // Domain and timeframe options
+  // Type, domain, and timeframe options
+  const TYPE_OPTIONS = [
+    { value: "Shared Goal" },
+    { value: "Personal Promise" },
+  ];
   const DOMAIN_OPTIONS = [
     { value: "Financial Alignment", color: "#43b581" },
     { value: "Academic/Career Support", color: "#7f53ac" },
@@ -337,40 +348,53 @@ function Roadmap() {
     { value: "Other", color: "#bdbdbd" },
   ];
   const TIMEFRAME_OPTIONS = [
-    { value: "1-Year Commitment" },
-    { value: "5-Year Vision" },
-    { value: "10-Year Legacy" },
+    { value: "Weekly" },
+    { value: "Monthly" },
+    { value: "Yearly+" },
   ];
+  const XP_BY_HORIZON = {
+    "Weekly": 25,
+    "Monthly": 75,
+    "Yearly+": 250,
+  };
 
   // Add new goal
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!goalText.trim() || !domain || !timeframe) return;
+    if (!goalText.trim() || !domain || !timeframe || !goalType) return;
     setSubmitting(true);
     try {
       await addDoc(collection(db, sharedGoalsPath), {
         text: goalText.trim(),
         domain,
         timeframe,
+        type: goalType,
         completed: false,
         created: Date.now(),
       });
       setGoalText("");
       setDomain("");
       setTimeframe("");
+      setGoalType("");
     } catch {}
     setSubmitting(false);
   };
 
-  // Toggle completion and award XP
+  // Toggle completion, archive, and award XP
   const handleToggleComplete = async (goal) => {
     if (goal.completed) return;
     const goalRef = doc(db, sharedGoalsPath, goal.id);
-    await updateDoc(goalRef, { completed: true, completedAt: Date.now() });
-    // XP logic
+    // Archive goal
+    await addDoc(collection(db, archivePath), {
+      ...goal,
+      completed: true,
+      completedAt: Date.now(),
+    });
+    await deleteDoc(goalRef);
+    // XP logic by horizon
     const xpSnap = await getDoc(xpDocRef);
-    const { addXP } = await import('./xpLogic');
-    const newXP = addXP(xpSnap.exists() ? xpSnap.data().xp : 0, 'goal');
+    const xpAward = XP_BY_HORIZON[goal.timeframe] || 25;
+    const newXP = (xpSnap.exists() ? xpSnap.data().xp : 0) + xpAward;
     if (xpSnap.exists()) {
       await updateDoc(xpDocRef, { xp: newXP });
     } else {
@@ -390,10 +414,7 @@ function Roadmap() {
   }
   for (const tf in grouped) {
     grouped[tf] = grouped[tf]
-      .sort((a, b) => {
-        if (a.completed !== b.completed) return a.completed ? 1 : -1;
-        return a.created - b.created;
-      });
+      .sort((a, b) => a.created - b.created);
   }
 
   // Helper: get domain color
@@ -413,28 +434,38 @@ function Roadmap() {
     }}>
       {/* Header */}
       <div style={{ textAlign: 'center', margin: '12px 0 18px 0' }}>
-        <h1 style={{ fontFamily: 'Inter, Roboto, Arial, sans-serif', fontWeight: 800, fontSize: 28, color: '#f3f3f3', letterSpacing: 0.5, margin: 0, textShadow: '0 2px 16px #0fffcf40' }}>Shared Growth Roadmap</h1>
+        <h1 style={{ fontFamily: 'Inter, Roboto, Arial, sans-serif', fontWeight: 800, fontSize: 28, color: '#f3f3f3', letterSpacing: 0.5, margin: 0, textShadow: '0 2px 16px #0fffcf40' }}>Velin Roadmap</h1>
+        <div style={{ color: '#bdbdbd', fontSize: 16, marginTop: 4, fontStyle: 'italic' }}>Transform promises into Integrity Capital. Complete goals to grow your shared world.</div>
       </div>
 
-      {/* Instructional Box (now matches other containers) */}
+      {/* Instructional Box */}
       <div className="velin-card" style={{ marginBottom: 18, display: 'flex', flexDirection: 'column', gap: 4, background: 'rgba(60,20,30,0.82)', border: '1.5px solid #a94442', boxShadow: '0 0 16px #a9444210' }}>
-        <div style={{ fontWeight: 700, color: '#3f8efc', fontSize: 18, marginBottom: 2, fontFamily: 'Inter, Roboto, Arial, sans-serif', letterSpacing: 0.2 }}>Set long-term goals for alignment</div>
-        <div style={{ fontSize: 15, color: '#f4f4f4', fontFamily: 'Inter, Roboto, Arial, sans-serif' }}>Completing a goal awards <span style={{ fontWeight: 700, color: '#3f8efc' }}>100 Growth Points (GP)</span> to the shared pool.</div>
+        <div style={{ fontWeight: 700, color: '#3f8efc', fontSize: 18, marginBottom: 2, fontFamily: 'Inter, Roboto, Arial, sans-serif', letterSpacing: 0.2 }}>The Vow: Make a Commitment</div>
+        <div style={{ fontSize: 15, color: '#f4f4f4', fontFamily: 'Inter, Roboto, Arial, sans-serif' }}>Choose a type, horizon, and describe what "Done" looks like. Completion awards XP and archives your promise forever.</div>
       </div>
 
       {/* Goal Submission Form */}
       <form className="velin-card" style={{ marginBottom: 18, display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'stretch', background: 'rgba(60,20,30,0.82)', boxShadow: '0 2px 12px #ffb6c120', border: '1.5px solid #a94442' }} onSubmit={handleSubmit}>
-        <label style={{ fontWeight: 700, color: '#ffb6c1', fontSize: 16, marginBottom: 2, fontFamily: 'Inter, Roboto, Arial, sans-serif', letterSpacing: 0.2 }}>Goal Description</label>
+        <label style={{ fontWeight: 700, color: '#ffb6c1', fontSize: 16, marginBottom: 2, fontFamily: 'Inter, Roboto, Arial, sans-serif', letterSpacing: 0.2 }}>Description</label>
         <textarea
           rows={4}
           value={goalText}
           onChange={e => setGoalText(e.target.value)}
-          placeholder="Describe your commitment (e.g., 'Save $5,000 for emergency fund')"
+          placeholder="Describe your promise or goal (e.g., 'Plan a date night every Friday')"
           required
           className="velin-textarea"
           style={{ resize: 'vertical', minHeight: 64, maxHeight: 160, background: 'rgba(40,20,30,0.92)', color: '#f4f4f4', border: '1.5px solid #a94442', borderRadius: 14, fontSize: 16, padding: 14, fontFamily: 'Inter, Roboto, Arial, sans-serif', letterSpacing: 0.1, boxShadow: '0 1px 8px #ffb6c120', outline: 'none' }}
         />
         <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ flex: 1 }}>
+            <label style={{ fontWeight: 700, color: '#ffb6c1', fontSize: 15, fontFamily: 'Inter, Roboto, Arial, sans-serif' }}>Type</label>
+            <select value={goalType} onChange={e => setGoalType(e.target.value)} required className="velin-input" style={{ width: '100%', marginTop: 2, background: 'rgba(40,20,30,0.92)', color: '#f4f4f4', border: '1.5px solid #a94442', borderRadius: 12, fontSize: 15, fontFamily: 'Inter, Roboto, Arial, sans-serif', letterSpacing: 0.1, boxShadow: '0 1px 8px #ffb6c120', outline: 'none' }}>
+              <option value="" disabled>Select type</option>
+              {TYPE_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.value}</option>
+              ))}
+            </select>
+          </div>
           <div style={{ flex: 1 }}>
             <label style={{ fontWeight: 700, color: '#ffb6c1', fontSize: 15, fontFamily: 'Inter, Roboto, Arial, sans-serif' }}>Domain</label>
             <select value={domain} onChange={e => setDomain(e.target.value)} required className="velin-input" style={{ width: '100%', marginTop: 2, background: 'rgba(40,20,30,0.92)', color: '#f4f4f4', border: '1.5px solid #a94442', borderRadius: 12, fontSize: 15, fontFamily: 'Inter, Roboto, Arial, sans-serif', letterSpacing: 0.1, boxShadow: '0 1px 8px #ffb6c120', outline: 'none' }}>
@@ -445,46 +476,45 @@ function Roadmap() {
             </select>
           </div>
           <div style={{ flex: 1 }}>
-            <label style={{ fontWeight: 700, color: '#ffb6c1', fontSize: 15, fontFamily: 'Inter, Roboto, Arial, sans-serif' }}>Timeframe</label>
+            <label style={{ fontWeight: 700, color: '#ffb6c1', fontSize: 15, fontFamily: 'Inter, Roboto, Arial, sans-serif' }}>Horizon</label>
             <select value={timeframe} onChange={e => setTimeframe(e.target.value)} required className="velin-input" style={{ width: '100%', marginTop: 2, background: 'rgba(40,20,30,0.92)', color: '#f4f4f4', border: '1.5px solid #a94442', borderRadius: 12, fontSize: 15, fontFamily: 'Inter, Roboto, Arial, sans-serif', letterSpacing: 0.1, boxShadow: '0 1px 8px #ffb6c120', outline: 'none' }}>
-              <option value="" disabled>Select timeframe</option>
+              <option value="" disabled>Select horizon</option>
               {TIMEFRAME_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value} style={{ color: '#a94442', background: '#ffb6c1' }}>{opt.value}</option>
+                <option key={opt.value} value={opt.value}>{opt.value}</option>
               ))}
             </select>
           </div>
         </div>
-        <button type="submit" disabled={!goalText.trim() || !domain || !timeframe || submitting} className="velin-btn" style={{ marginTop: 8, fontSize: 17, padding: '12px 0', borderRadius: 16, background: 'linear-gradient(90deg,#3f8efc,#7f53ac)', color: '#fff', fontWeight: 700, border: 'none', boxShadow: '0 2px 12px #3f8efc80', opacity: (!goalText.trim() || !domain || !timeframe || submitting) ? 0.7 : 1, textShadow: '0 2px 8px #3f8efc80', fontFamily: 'Inter, Roboto, Arial, sans-serif', letterSpacing: 0.1 }}>Commit to Goal</button>
+        <button type="submit" disabled={!goalText.trim() || !domain || !timeframe || !goalType || submitting} className="velin-btn" style={{ marginTop: 8, fontSize: 17, padding: '12px 0', borderRadius: 16, background: 'linear-gradient(90deg,#3f8efc,#7f53ac)', color: '#fff', fontWeight: 700, border: 'none', boxShadow: '0 2px 12px #3f8efc80', opacity: (!goalText.trim() || !domain || !timeframe || !goalType || submitting) ? 0.7 : 1, textShadow: '0 2px 8px #3f8efc80', fontFamily: 'Inter, Roboto, Arial, sans-serif', letterSpacing: 0.1 }}>Commit</button>
       </form>
 
-      {/* Grouped Goals by Timeframe */}
+      {/* Grouped Goals by Horizon */}
       {TIMEFRAME_OPTIONS.map(tf => (
         <div key={tf.value} style={{ marginBottom: 22 }}>
-          <div style={{ fontWeight: 700, fontSize: 18, color: '#f3f3f3', margin: '0 0 8px 2px', textShadow: '0 2px 8px #0fffcf40' }}>{tf.value} ({grouped[tf.value].filter(g => !g.completed).length} outstanding)</div>
+          <div style={{ fontWeight: 700, fontSize: 18, color: '#f3f3f3', margin: '0 0 8px 2px', textShadow: '0 2px 8px #0fffcf40' }}>{tf.value} ({grouped[tf.value].length} active)</div>
           {grouped[tf.value].length === 0 ? (
-            <div style={{ color: '#aaa', fontSize: 15, margin: '0 0 8px 8px' }}>No goals yet.</div>
+            <div style={{ color: '#aaa', fontSize: 15, margin: '0 0 8px 8px' }}>No commitments yet.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {grouped[tf.value].map(goal => (
                 <div key={goal.id} className="velin-card" style={{
-                  display: 'flex', alignItems: 'center', gap: 12, background: goal.completed ? '#1a2420' : '#232323', opacity: goal.completed ? 0.7 : 1, boxShadow: goal.completed ? '0 1px 4px #0fffcf40' : undefined, position: 'relative', transition: 'background 0.2s, opacity 0.2s', borderLeft: goal.completed ? '6px solid #145c4a' : '6px solid transparent', border: 'none', color: goal.completed ? '#bdbdbd' : '#f3f3f3', borderRadius: 18 }}>
+                  display: 'flex', alignItems: 'center', gap: 12, background: '#232323', boxShadow: '0 1px 8px #0fffcf40', position: 'relative', borderLeft: `6px solid ${goalType === 'Personal Promise' ? '#ffb6c1' : '#3f8efc'}`,
+                  color: '#f3f3f3', borderRadius: 18, animation: burstGoalId === goal.id ? 'pulse 1.2s' : undefined, transition: 'background 0.2s, opacity 0.2s', opacity: 1 }}>
                   {/* Completion Checkbox */}
-                  <div onClick={() => handleToggleComplete(goal)} style={{ cursor: goal.completed ? 'default' : 'pointer', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, border: `2.5px solid ${goal.completed ? '#0fffcf' : '#232e2b'}`, background: goal.completed ? '#181818' : '#121212', marginRight: 2, transition: 'border 0.2s, background 0.2s', boxShadow: goal.completed ? '0 0 8px #0fffcf80' : undefined }}>
-                    {goal.completed ? (
-                      <svg width="22" height="22" viewBox="0 0 22 22"><polyline points="4,12 10,18 18,6" style={{ fill: 'none', stroke: '#0fffcf', strokeWidth: 3, strokeLinecap: 'round', strokeLinejoin: 'round' }} /></svg>
-                    ) : (
-                      <svg width="22" height="22" viewBox="0 0 22 22"><rect x="4" y="4" width="14" height="14" rx="4" fill="none" stroke="#232e2b" strokeWidth="2.5" /></svg>
-                    )}
+                  <div onClick={() => handleToggleComplete(goal)} style={{ cursor: 'pointer', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, border: `2.5px solid #3f8efc`, background: '#121212', marginRight: 2, transition: 'border 0.2s, background 0.2s' }}>
+                    <svg width="22" height="22" viewBox="0 0 22 22"><rect x="4" y="4" width="14" height="14" rx="4" fill="none" stroke="#232e2b" strokeWidth="2.5" /></svg>
                   </div>
                   {/* Goal Text */}
-                  <div style={{ flex: 1, fontSize: 16, color: goal.completed ? '#bdbdbd' : '#f3f3f3', textDecoration: goal.completed ? 'line-through' : 'none', fontWeight: 500, opacity: goal.completed ? 0.7 : 1 }}>{goal.text}</div>
+                  <div style={{ flex: 1, fontSize: 16, color: '#f3f3f3', fontWeight: 500 }}>{goal.text}</div>
+                  {/* Type Tag */}
+                  <div style={{ fontSize: 13, fontWeight: 700, color: goal.type === 'Personal Promise' ? '#ffb6c1' : '#3f8efc', background: '#121212', borderRadius: 10, padding: '4px 10px', marginLeft: 2, border: `1.5px solid ${goal.type === 'Personal Promise' ? '#ffb6c1' : '#3f8efc'}`, boxShadow: '0 0 8px #3f8efc80' }}>{goal.type}</div>
                   {/* Domain Tag */}
                   <div style={{ fontSize: 13, fontWeight: 700, color: getDomainColor(goal.domain), background: '#121212', borderRadius: 10, padding: '4px 10px', marginLeft: 2, border: `1.5px solid ${getDomainColor(goal.domain)}`, boxShadow: '0 0 8px ' + getDomainColor(goal.domain) + '80' }}>{goal.domain}</div>
                   {/* Delete Button */}
                   <button
                     onClick={async (e) => {
                       e.stopPropagation();
-                      if (window.confirm('Delete this goal?')) {
+                      if (window.confirm('Delete this commitment?')) {
                         const goalRef = doc(db, sharedGoalsPath, goal.id);
                         await deleteDoc(goalRef);
                       }
@@ -508,19 +538,6 @@ function Roadmap() {
                       <circle cx="11" cy="11" r="10" fill="#fff0" />
                       <path d="M7 7L15 15M15 7L7 15" stroke="#ff3576" strokeWidth="2.5" strokeLinecap="round"/>
                     </svg>
-                    <span style={{
-                      position: 'absolute',
-                      top: 2,
-                      right: 2,
-                      width: 10,
-                      height: 10,
-                      borderRadius: '50%',
-                      background: 'linear-gradient(90deg,#ff3576,#ff7cae)',
-                      boxShadow: '0 0 8px #ff357680',
-                      opacity: 0.7,
-                      zIndex: 1,
-                      pointerEvents: 'none',
-                    }} />
                   </button>
                   {/* XP Burst Animation */}
                   {burstGoalId === goal.id && (
@@ -534,6 +551,29 @@ function Roadmap() {
           )}
         </div>
       ))}
+
+      {/* Integrity Ledger / Archive */}
+      <div style={{ marginTop: 36 }}>
+        <div style={{ fontWeight: 700, fontSize: 20, color: '#f3f3f3', margin: '0 0 8px 2px', textShadow: '0 2px 8px #0fffcf40' }}>Integrity Ledger (Archive)</div>
+        {archived.length === 0 ? (
+          <div style={{ color: '#aaa', fontSize: 15, margin: '0 0 8px 8px' }}>No completed commitments yet.</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {archived.sort((a, b) => b.completedAt - a.completedAt).map(goal => (
+              <div key={goal.id} className="velin-card" style={{
+                display: 'flex', alignItems: 'center', gap: 12, background: '#1a2420', opacity: 0.8, boxShadow: '0 1px 4px #0fffcf40', position: 'relative', borderLeft: `6px solid ${goal.type === 'Personal Promise' ? '#ffb6c1' : '#3f8efc'}`,
+                color: '#bdbdbd', borderRadius: 18, textDecoration: 'line-through', fontStyle: 'italic', fontWeight: 500 }}>
+                <svg width="22" height="22" viewBox="0 0 22 22"><polyline points="4,12 10,18 18,6" style={{ fill: 'none', stroke: '#0fffcf', strokeWidth: 3, strokeLinecap: 'round', strokeLinejoin: 'round' }} /></svg>
+                <div style={{ flex: 1 }}>{goal.text}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: goal.type === 'Personal Promise' ? '#ffb6c1' : '#3f8efc', background: '#121212', borderRadius: 10, padding: '4px 10px', marginLeft: 2, border: `1.5px solid ${goal.type === 'Personal Promise' ? '#ffb6c1' : '#3f8efc'}`, boxShadow: '0 0 8px #3f8efc80' }}>{goal.type}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: getDomainColor(goal.domain), background: '#121212', borderRadius: 10, padding: '4px 10px', marginLeft: 2, border: `1.5px solid ${getDomainColor(goal.domain)}`, boxShadow: '0 0 8px ' + getDomainColor(goal.domain) + '80' }}>{goal.domain}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#FFD600', background: '#121212', borderRadius: 10, padding: '4px 10px', marginLeft: 2, border: '1.5px solid #FFD600', boxShadow: '0 0 8px #FFD60080' }}>{goal.timeframe}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#0fffcf', background: '#121212', borderRadius: 10, padding: '4px 10px', marginLeft: 2, border: '1.5px solid #0fffcf', boxShadow: '0 0 8px #0fffcf80' }}>{goal.completedAt ? new Date(goal.completedAt).toLocaleDateString() : ''}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -543,21 +583,27 @@ function SharedJournal({ showToast }) {
   const [entries, setEntries] = useState2([]);
   const [input, setInput] = useState2("");
   const [loading, setLoading] = useState2(true);
+  const [submitting, setSubmitting] = useState2(false);
+  const textareaRef = React.useRef(null);
   const appId = "velin-demo";
   useEffect2(() => {
     setLoading(true);
-    const q = query(collection(db, getPublicDataPath(appId) + "journal"), orderBy("created", "desc"));
+    const q = query(collection(db, getPublicDataPath(appId) + "/journal"), orderBy("created", "desc"));
     const unsub = onSnapshot(q, snap => {
       setEntries(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     }, () => setLoading(false));
     return unsub;
   }, []);
+  useEffect2(() => {
+    if (textareaRef.current) textareaRef.current.focus();
+  }, []);
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
+    setSubmitting(true);
     try {
-      await addDoc(collection(db, getPublicDataPath(appId) + "journal"), {
+      await addDoc(collection(db, getPublicDataPath(appId) + "/journal"), {
         text: input,
         created: Date.now(),
       });
@@ -565,75 +611,133 @@ function SharedJournal({ showToast }) {
       showToast('Journal entry added!', 'success');
     } catch (err) {
       showToast('Failed to add journal entry', 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
-  // Ensure return is inside the function body
   return (
-    <div>
-      <form onSubmit={handleAdd} style={{ margin: '16px 0', display: 'flex', gap: 8 }} aria-label="Add journal entry form" role="form">
-        <input value={input} onChange={e => setInput(e.target.value)} placeholder="New journal entry..." aria-label="Journal entry input" style={{ flex: 1, padding: 12, borderRadius: 16, border: '1.5px solid #BDBDBD', fontSize: 17, background: '#FAF8FF' }} />
-        <button type="submit" aria-label="Add journal entry" className="velin-btn-blue" style={{ padding: '12px 22px', borderRadius: 16 }}>Add</button>
+    <div className="velin-card velin-journal-card" style={{ maxWidth: 600, margin: '0 auto', background: 'rgba(255,255,255,0.07)', boxShadow: '0 4px 32px #7f53ac22', border: 'none' }}>
+      <div style={{ textAlign: 'center', marginBottom: 18 }}>
+        <h2 className="velin-section-title" style={{ marginBottom: 4 }}>My Journal</h2>
+        <div className="velin-section-subtitle" style={{ color: '#bdbdbd', fontStyle: 'italic', fontSize: 16 }}>
+          "This is your safe space. Write your thoughts, feelings, and moments."
+        </div>
+      </div>
+      <form onSubmit={handleAdd} style={{ margin: '0 0 24px 0', display: 'flex', flexDirection: 'column', gap: 10 }} aria-label="Add journal entry form" role="form">
+        <textarea
+          ref={textareaRef}
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          placeholder="Start writing..."
+          aria-label="Journal entry textarea"
+          className="velin-journal-textarea"
+          rows={5}
+          maxLength={1000}
+          style={{ resize: 'vertical', fontSize: 18, borderRadius: 18, background: '#f8fafc', color: '#3f2778', border: '1.5px solid #bdbdbd', padding: '18px 16px', outline: 'none', boxShadow: '0 2px 12px #7f53ac11', fontFamily: 'inherit', marginBottom: 0 }}
+          disabled={submitting}
+        />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ color: '#bdbdbd', fontSize: 14 }}>{input.length} / 1000</span>
+          <button type="submit" aria-label="Add journal entry" className="velin-btn-blue" style={{ padding: '12px 32px', borderRadius: 18, fontSize: 17 }} disabled={submitting || !input.trim()}>{submitting ? 'Saving...' : 'Add Entry'}</button>
+        </div>
       </form>
-      {loading ? (
-        <div style={{ color: '#AAA', textAlign: 'center', margin: '32px 0' }}>Loading...</div>
-      ) : entries.length === 0 ? (
-        <div style={{ color: '#AAA', textAlign: 'center', margin: '32px 0' }}>No journal entries yet.</div>
-      ) : (
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          {entries.map(entry => (
-            <li key={entry.id} className="velin-list-item" style={{ textAlign: 'left', fontSize: 17 }}>{entry.text}</li>
-          ))}
-        </ul>
-      )}
+      <div style={{ marginTop: 18 }}>
+        {loading ? (
+          <div style={{ color: '#AAA', textAlign: 'center', margin: '32px 0' }}>Loading...</div>
+        ) : entries.length === 0 ? (
+          <div style={{ color: '#AAA', textAlign: 'center', margin: '32px 0' }}>No journal entries yet.</div>
+        ) : (
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, maxHeight: 340, overflowY: 'auto' }}>
+            {entries.map(entry => (
+              <li key={entry.id} className="velin-journal-entry" style={{ background: '#fff', color: '#3f2778', borderRadius: 16, margin: '0 0 18px 0', padding: '18px 18px 12px 18px', boxShadow: '0 2px 12px #7f53ac11', fontSize: 17, position: 'relative' }}>
+                <div style={{ fontSize: 15, color: '#bdbdbd', marginBottom: 6, fontFamily: 'monospace' }}>{entry.created ? new Date(entry.created).toLocaleString() : ''}</div>
+                <div style={{ whiteSpace: 'pre-line', fontSize: 17 }}>{entry.text}</div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
 
 function FeedbackLoop({ showToast }) {
-  const [feedbacks, setFeedbacks] = useState2([]);
+  const [messages, setMessages] = useState2([]);
   const [input, setInput] = useState2("");
   const [loading, setLoading] = useState2(true);
+  const [mode, setMode] = useState2("message"); // message, poem, letter
   const appId = "velin-demo";
   useEffect2(() => {
     setLoading(true);
-    const q = query(collection(db, getPublicDataPath(appId) + "feedback"), orderBy("created", "desc"));
+    const q = query(collection(db, getPublicDataPath(appId) + "/messages"), orderBy("created", "desc"));
     const unsub = onSnapshot(q, snap => {
-      setFeedbacks(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setMessages(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     }, () => setLoading(false));
     return unsub;
   }, []);
-  const handleAdd = async (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
     try {
-      await addDoc(collection(db, getPublicDataPath(appId) + "feedback"), {
+      await addDoc(collection(db, getPublicDataPath(appId) + "/messages"), {
         text: input,
+        type: mode,
         created: Date.now(),
       });
       setInput("");
-      showToast('Feedback added!', 'success');
+      showToast('Sent!', 'success');
     } catch (err) {
-      showToast('Failed to add feedback', 'error');
+      showToast('Failed to send', 'error');
     }
   };
   return (
-    <div>
-      <form onSubmit={handleAdd} style={{ margin: '16px 0', display: 'flex', gap: 8 }} aria-label="Add feedback form" role="form">
-        <input value={input} onChange={e => setInput(e.target.value)} placeholder="New feedback..." aria-label="Feedback input" style={{ flex: 1, padding: 12, borderRadius: 16, border: '1.5px solid #BDBDBD', fontSize: 17, background: '#FAF8FF' }} />
-        <button type="submit" aria-label="Add feedback" className="velin-btn-blue" style={{ padding: '12px 22px', borderRadius: 16 }}>Add</button>
+    <div className="velin-card" style={{ maxWidth: 600, margin: '0 auto', background: 'rgba(255,255,255,0.07)', boxShadow: '0 4px 32px #7f53ac22', border: 'none', padding: 24 }}>
+      <div style={{ textAlign: 'center', marginBottom: 18 }}>
+        <h2 className="velin-section-title" style={{ marginBottom: 4 }}>Send a Message, Poem, or Letter</h2>
+        <div className="velin-section-subtitle" style={{ color: '#bdbdbd', fontStyle: 'italic', fontSize: 16 }}>
+          "Express yourself. Your words will be saved and cherished."
+        </div>
+      </div>
+      <form onSubmit={handleSend} style={{ margin: '0 0 24px 0', display: 'flex', flexDirection: 'column', gap: 10 }} aria-label="Send message form" role="form">
+        <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+          <button type="button" className={mode === 'message' ? 'velin-btn-blue' : 'velin-btn'} style={{ flex: 1, borderRadius: 12, fontWeight: 700 }} onClick={() => setMode('message')}>Message</button>
+          <button type="button" className={mode === 'poem' ? 'velin-btn-blue' : 'velin-btn'} style={{ flex: 1, borderRadius: 12, fontWeight: 700 }} onClick={() => setMode('poem')}>Poem</button>
+          <button type="button" className={mode === 'letter' ? 'velin-btn-blue' : 'velin-btn'} style={{ flex: 1, borderRadius: 12, fontWeight: 700 }} onClick={() => setMode('letter')}>Letter</button>
+        </div>
+        <textarea
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          placeholder={mode === 'poem' ? 'Write a poem...' : mode === 'letter' ? 'Write a letter...' : 'Type your message...'}
+          aria-label="Message input"
+          className="velin-journal-textarea"
+          rows={mode === 'poem' ? 8 : 5}
+          maxLength={mode === 'poem' ? 2000 : 1000}
+          style={{ resize: 'vertical', fontSize: 18, borderRadius: 18, background: '#f8fafc', color: '#3f2778', border: '1.5px solid #bdbdbd', padding: '18px 16px', outline: 'none', boxShadow: '0 2px 12px #7f53ac11', fontFamily: 'inherit', marginBottom: 0 }}
+          disabled={loading}
+        />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ color: '#bdbdbd', fontSize: 14 }}>{input.length} / {mode === 'poem' ? 2000 : 1000}</span>
+          <button type="submit" aria-label="Send message" className="velin-btn-blue" style={{ padding: '12px 32px', borderRadius: 18, fontSize: 17 }} disabled={loading || !input.trim()}>{loading ? 'Loading...' : 'Send'}</button>
+        </div>
       </form>
-      {loading ? (
-        <div style={{ color: '#AAA', textAlign: 'center', margin: '32px 0' }}>Loading...</div>
-      ) : feedbacks.length === 0 ? (
-        <div style={{ color: '#AAA', textAlign: 'center', margin: '32px 0' }}>No feedback yet.</div>
-      ) : (
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          {feedbacks.map(fb => (
-            <li key={fb.id} className="velin-list-item" style={{ textAlign: 'left', fontSize: 17 }}>{fb.text}</li>
-          ))}
-        </ul>
-      )}
+      <div style={{ marginTop: 18 }}>
+        {loading ? (
+          <div style={{ color: '#AAA', textAlign: 'center', margin: '32px 0' }}>Loading...</div>
+        ) : messages.length === 0 ? (
+          <div style={{ color: '#AAA', textAlign: 'center', margin: '32px 0' }}>No messages yet.</div>
+        ) : (
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {messages.map(msg => (
+              <li key={msg.id} className="velin-list-item" style={{ textAlign: 'left', fontSize: 17, marginBottom: 18, background: 'rgba(255,255,255,0.13)', borderRadius: 14, padding: 14, boxShadow: '0 2px 12px #7f53ac11' }}>
+                <div style={{ fontWeight: 700, color: msg.type === 'poem' ? '#7f53ac' : msg.type === 'letter' ? '#43b581' : '#3f2778', marginBottom: 6, fontSize: 15 }}>{msg.type.charAt(0).toUpperCase() + msg.type.slice(1)}</div>
+                <div style={{ whiteSpace: 'pre-line', fontSize: 17 }}>{msg.text}</div>
+                <div style={{ color: '#bdbdbd', fontSize: 13, marginTop: 8 }}>{new Date(msg.created).toLocaleString()}</div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

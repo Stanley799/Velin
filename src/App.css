@@ -1,3 +1,48 @@
+/* Journal notebook/diary styles */
+.velin-journal-card {
+  background: rgba(255,255,255,0.07) !important;
+  box-shadow: 0 4px 32px #7f53ac22 !important;
+  border: none !important;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.velin-journal-textarea {
+  width: 100%;
+  min-height: 120px;
+  max-height: 320px;
+  font-size: 18px;
+  border-radius: 18px;
+  background: #f8fafc;
+  color: #3f2778;
+  border: 1.5px solid #bdbdbd;
+  padding: 18px 16px;
+  outline: none;
+  box-shadow: 0 2px 12px #7f53ac11;
+  font-family: 'Inter', 'Roboto', 'Arial', sans-serif;
+  margin-bottom: 0;
+  transition: border 0.2s, box-shadow 0.2s;
+  resize: vertical;
+}
+.velin-journal-textarea:focus {
+  border: 1.5px solid #7f53ac;
+  box-shadow: 0 2px 16px #7f53ac33;
+}
+.velin-journal-entry {
+  background: #fff;
+  color: #3f2778;
+  border-radius: 16px;
+  margin: 0 0 18px 0;
+  padding: 18px 18px 12px 18px;
+  box-shadow: 0 2px 12px #7f53ac11;
+  font-size: 17px;
+  position: relative;
+  transition: box-shadow 0.2s, background 0.2s;
+  border: 1.5px solid #f3e1ff;
+}
+.velin-journal-entry:hover {
+  box-shadow: 0 4px 24px #7f53ac22;
+  background: #f8fafc;
+}
 /* Bottom nav button styles (mobile) */
 .velin-topnav-btn {
   flex: 1;
@@ -15,7 +60,6 @@
   margin: 0 2px;
   cursor: pointer;
 }
-.
 .velin-bottomnav .velin-topnav-btn.active,
 .velin-topnav-btn.active {
   background: linear-gradient(135deg, #1DB954 60%, #232323 100%) !important;
