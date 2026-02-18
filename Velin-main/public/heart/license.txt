@@ -1,0 +1,11 @@
+Model Information:
+* title:	Heart Potion
+* source:	https://sketchfab.com/3d-models/heart-potion-08d82cf42f7d4ce1929bd63bde3dc362
+* author:	M. Fauconnier (https://sketchfab.com/ElFaucon)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Heart Potion" (https://sketchfab.com/3d-models/heart-potion-08d82cf42f7d4ce1929bd63bde3dc362) by M. Fauconnier (https://sketchfab.com/ElFaucon) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
