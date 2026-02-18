@@ -1,0 +1,1 @@
+C:\Users\Stalozran\OneDrive\ -\ Strathmore\ University\Documents\My\ Projects\Velin-main\Velin\test_rust\target\debug\test_rust.exe: C:\Users\Stalozran\OneDrive\ -\ Strathmore\ University\Documents\My\ Projects\Velin-main\Velin\test_rust\src\main.rs
